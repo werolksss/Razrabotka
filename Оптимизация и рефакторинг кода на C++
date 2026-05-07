@@ -1,0 +1,156 @@
+#include <algorithm>
+#include <iomanip>
+#include <iostream>
+#include <limits>
+#include <numeric>
+#include <string>
+#include <vector>
+
+struct Student {
+    std::string name;
+    std::vector<int> grades;
+};
+
+constexpr std::size_t TOP_STUDENTS_COUNT = 3;
+
+double calculateAverage(const Student& student) {
+    if (student.grades.empty()) {
+        return 0.0;
+    }
+
+    int sum = std::accumulate(student.grades.begin(), student.grades.end(), 0);
+    return static_cast<double>(sum) / student.grades.size();
+}
+
+int readPositiveInt(const std::string& message) {
+    int value;
+
+    while (true) {
+        std::cout << message;
+
+        if (std::cin >> value && value > 0) {
+            return value;
+        }
+
+        std::cout << "Ошибка: введите положительное число.\n";
+        std::cin.clear();
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    }
+}
+
+int readNonNegativeInt(const std::string& message) {
+    int value;
+
+    while (true) {
+        std::cout << message;
+
+        if (std::cin >> value && value >= 0) {
+            return value;
+        }
+
+        std::cout << "Ошибка: введите неотрицательное число.\n";
+        std::cin.clear();
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    }
+}
+
+std::vector<Student> readStudents() {
+    int studentsCount = readNonNegativeInt("Введите количество студентов: ");
+
+    std::vector<Student> students;
+    students.reserve(static_cast<std::size_t>(studentsCount));
+
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+    for (int i = 0; i < studentsCount; ++i) {
+        Student student;
+
+        std::cout << "\nВведите имя студента #" << i + 1 << ": ";
+        std::getline(std::cin, student.name);
+
+        while (student.name.empty()) {
+            std::cout << "Имя не может быть пустым. Введите имя ещё раз: ";
+            std::getline(std::cin, student.name);
+        }
+
+        int gradesCount = readPositiveInt("Введите количество оценок: ");
+        student.grades.reserve(static_cast<std::size_t>(gradesCount));
+
+        std::cout << "Введите оценки: ";
+        for (int j = 0; j < gradesCount; ++j) {
+            int grade;
+
+            while (!(std::cin >> grade)) {
+                std::cout << "Ошибка: введите целое число: ";
+                std::cin.clear();
+                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            }
+
+            student.grades.push_back(grade);
+        }
+
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+        students.push_back(std::move(student));
+    }
+
+    return students;
+}
+
+void sortByAverageDescending(std::vector<Student>& students) {
+    std::sort(students.begin(), students.end(),
+        [](const Student& left, const Student& right) {
+            return calculateAverage(left) > calculateAverage(right);
+        });
+}
+
+void printStudent(const Student& student, std::size_t position) {
+    std::cout << position << ". "
+              << student.name
+              << " — средний балл: "
+              << std::fixed << std::setprecision(2)
+              << calculateAverage(student)
+              << '\n';
+}
+
+void printTopStudents(const std::vector<Student>& students) {
+    if (students.empty()) {
+        std::cout << "\nСписок студентов пуст. Топ студентов вывести невозможно.\n";
+        return;
+    }
+
+    std::vector<Student> sortedStudents = students;
+    sortByAverageDescending(sortedStudents);
+
+    std::size_t count = std::min(TOP_STUDENTS_COUNT, sortedStudents.size());
+
+    std::cout << "\nТоп-" << count << " студентов:\n";
+
+    for (std::size_t i = 0; i < count; ++i) {
+        printStudent(sortedStudents[i], i + 1);
+    }
+}
+
+void printSortedStudents(std::vector<Student> students) {
+    if (students.empty()) {
+        std::cout << "\nСписок студентов пуст.\n";
+        return;
+    }
+
+    sortByAverageDescending(students);
+
+    std::cout << "\nВсе студенты, отсортированные по убыванию среднего балла:\n";
+
+    for (std::size_t i = 0; i < students.size(); ++i) {
+        printStudent(students[i], i + 1);
+    }
+}
+
+int main() {
+    std::vector<Student> students = readStudents();
+
+    printTopStudents(students);
+    printSortedStudents(students);
+
+    return 0;
+}
